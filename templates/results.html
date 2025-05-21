@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Song Info</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <style>
+      .metadata-field {
+        margin-bottom: 0.75rem; /* Slightly reduced margin */
+      }
+      .metadata-field label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 0.1rem; /* Reduced margin */
+        color: #555;
+        font-size: 0.9em; /* Slightly smaller font */
+      }
+      .metadata-field input[type="text"],
+      .metadata-field textarea {
+        display: block;
+        width: 100%;
+        padding: 0.4rem;
+        border: 1px solid #ccc;
+        border-radius: 0.25rem;
+        background-color: #fff; /* Editable fields should be white */
+        font-size: 0.95em; /* Adjusted font size */
+      }
+      .metadata-field textarea {
+        height: 100px; /* Default height for lyrics/comment */
+        resize: vertical; /* Allow vertical resizing */
+      }
+      .cover-image-container {
+        border: 1px solid #ccc;
+        border-radius: 0.25rem;
+        padding: 0.5rem; /* Reduced padding for header */
+        background-color: #f9f9f9;
+        text-align: center;
+        margin-bottom: 0; /* Removed margin */
+        width: 80px; /* Fixed width for header cover */
+        height: 80px; /* Fixed height for header cover */
+        display: flex; /* Use flex to center image */
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0; /* Prevent shrinking */
+      }
+      .cover-image-container img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: cover;
+        border-radius: 0.15rem;
+      }
+      .placeholder-cover {
+        width: 100%;
+        height: 100%;
+        background-color: #ccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #555;
+        border-radius: 0.15rem;
+        font-size: 0.8em;
+      }
+      .section-title {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+      }
+      .info-box {
+        border: 1px solid #ddd;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        background-color: #fff;
+      }
+      .path-info {
+        word-wrap: break-word; /* Prevent long paths from overflowing */
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 1rem;
+      }
+      .best-match-card {
+        border-color: #007bff;
+        border-width: 2px;
+      }
+      .match-item {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer; /* Indicate clickable */
+      }
+      .match-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+      .cover-thumbnail {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        margin: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 0.15rem;
+      }
+      .best-match-header {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1.25rem; /* Match default card header padding */
+        background-color: rgba(0, 123, 255, 0.075);
+        border-bottom: 1px solid rgba(0, 123, 255, 0.125);
+        border-top-left-radius: calc(0.25rem - 1px);
+        border-top-right-radius: calc(0.25rem - 1px);
+        cursor: pointer;
+        position: relative; /* Needed for arrow positioning */
+        padding-right: 3rem; /* Add space for arrow */
+      }
+      .best-match-header h5 {
+        margin: 0;
+        line-height: 1.2;
+      }
+      .best-match-header .flex-grow-1 {
+        margin-left: 1rem;
+        margin-right: 1rem;
+      }
+      .best-match-header .title {
+        font-size: 1.25em; /* Larger font */
+        font-weight: bold;
+      }
+      .best-match-header .artist-album {
+        font-size: 0.9em;
+        font-weight: normal; /* Changed from thin */
+        color: #6c757d; /* Gray color */
+      }
+      .best-match-header .collapse-toggle {
+        position: absolute;
+        top: 50%;
+        right: 1.25rem;
+        transform: translateY(-50%);
+        font-size: 1.5em;
+        color: #555;
+        cursor: pointer;
+        transition: transform 0.3s ease-in-out;
+      }
+      .best-match-header .collapse-toggle.collapsed .bi-chevron-down {
+        transform: rotate(0deg);
+      }
+      .best-match-header .collapse-toggle .bi-chevron-down {
+        transform: rotate(180deg);
+      }
+      .best-match-body .metadata-detail label {
+        font-weight: normal;
+        color: #555;
+        font-size: 0.9em;
+        margin-bottom: 0.1rem;
+      }
+      .best-match-body .metadata-detail span {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 1em;
+        font-weight: bold;
+      }
+      .best-match-body .metadata-detail {
+        margin-bottom: 0.75rem;
+      }
+    </style>
+  </head>
+  <body class="bg-light">
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <h1 class="card-title text-center mb-4">Song Information</h1>
+
+          {% if metadata or results %}
+
+          <!-- Store match data as JSON scripts -->
+          <div id="match-data" style="display: none">
+            {% for loop_index, track in enumerate(results) %} {% if track is not
+            none %}
+            <script id="match-{{ loop_index }}-data" type="application/json">
+              {{ track | tojson | safe }}
+            </script>
+            {% endif %} {% endfor %}
+          </div>
+
+          <!-- Best Match Section -->
+          {% set best_match_index = 0 if results and results[0] is not none else
+          -1 %} {% set best_match = results[best_match_index] if
+          best_match_index != -1 else None %}
+
+          <div class="card best-match-card mb-4">
+            {% if best_match %}
+            <div
+              class="best-match-header"
+              data-bs-toggle="collapse"
+              data-bs-target="#bestMatchCollapse"
+              aria-expanded="true"
+              aria-controls="bestMatchCollapse"
+              data-match-index="{{ best_match_index }}"
+            >
+              <div class="cover-image-container">
+                {% if best_match.cover_art %}
+                <img src="{{ best_match.cover_art }}" alt="Album Cover" />
+                {% else %}
+                <div class="placeholder-cover">No Cover</div>
+                {% endif %}
+              </div>
+              <div class="flex-grow-1">
+                <div class="title">
+                  {{ best_match.title if best_match.title else 'N/A' }}
+                </div>
+                <div class="artist-album">
+                  {{ best_match['artist-credit'][0].name if
+                  best_match.get('artist-credit') and
+                  best_match['artist-credit'][0].get('name') else 'N/A' }} - {{
+                  best_match.releases[0].title if best_match.get('releases') and
+                  best_match['releases'][0].get('title') else 'N/A' }}
+                </div>
+              </div>
+              <div class="collapse-toggle">
+                <i class="bi bi-chevron-down"></i>
+              </div>
+            </div>
+
+            <div
+              id="bestMatchCollapse"
+              class="collapse show"
+              aria-labelledby="bestMatchHeading"
+            >
+              <div class="card-body best-match-body">
+                <div class="metadata-detail">
+                  <span
+                    >{{ best_match.title if best_match.title else 'N/A' }}</span
+                  >
+                  <label>Title</label>
+                </div>
+                <div class="metadata-detail">
+                  <span
+                    >{{ best_match['artist-credit'][0].name if
+                    best_match.get('artist-credit') and
+                    best_match['artist-credit'][0].get('name') else 'N/A'
+                    }}</span
+                  >
+                  <label>Artist</label>
+                </div>
+                <div class="metadata-detail">
+                  <span
+                    >{{ best_match.releases[0].title if
+                    best_match.get('releases') and
+                    best_match['releases'][0].get('title') else 'N/A' }}</span
+                  >
+                  <label>Album name</label>
+                </div>
+                <div class="metadata-detail">
+                  <span
+                    >{{ metadata.genre if metadata and metadata.genre else 'N/A'
+                    }}</span
+                  >
+                  {# Use genre from metadata as it's more reliable #}
+                  <label>Genre</label>
+                </div>
+                <div class="metadata-detail">
+                  <span
+                    >{{ best_match.releases[0].date[:4] if
+                    best_match.get('releases') and
+                    best_match['releases'][0].get('date') else 'N/A' }}</span
+                  >
+                  <label>Year</label>
+                </div>
+
+                {% else %}
+                <div class="card-body">
+                  <p>No best match found.</p>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Metadata Fields Section -->
+          {% if metadata %}
+          <div class="card shadow mb-4">
+            <div class="card-body">
+              <h4 class="section-title">
+                <i class="bi bi-pencil-square"></i> Metadata Fields
+              </h4>
+              <form
+                id="metadata-form"
+                method="POST"
+                action="{{ url_for('save_metadata') }}"
+              >
+                <input
+                  type="hidden"
+                  name="filepath"
+                  value="{{ metadata.filepath }}"
+                />
+
+                <div class="info-box">
+                  <div class="metadata-field">
+                    <label for="title">Title:</label>
+                    <input
+                      type="text"
+                      id="title"
+                      name="title"
+                      value="{{ metadata.title if metadata.title else '' }}"
+                    />
+                  </div>
+                  <div class="metadata-field">
+                    <label for="artist">Artist:</label>
+                    <input
+                      type="text"
+                      id="artist"
+                      name="artist"
+                      value="{{ metadata.artist if metadata.artist else '' }}"
+                    />
+                  </div>
+                  <div class="metadata-field">
+                    <label for="album">Album Name:</label>
+                    <input
+                      type="text"
+                      id="album"
+                      name="album"
+                      value="{{ metadata.album if metadata.album else '' }}"
+                    />
+                  </div>
+                  <div class="metadata-field">
+                    <label for="genre">Genre:</label>
+                    <input
+                      type="text"
+                      id="genre"
+                      name="genre"
+                      value="{{ metadata.genre if metadata.genre else '' }}"
+                    />
+                  </div>
+                  <div class="metadata-field">
+                    <label for="tracknumber">Track Number:</label>
+                    <input
+                      type="text"
+                      id="tracknumber"
+                      name="tracknumber"
+                      value="{{ metadata.tracknumber if metadata.tracknumber else '' }}"
+                    />
+                  </div>
+                  <div class="metadata-field">
+                    <label for="discnumber">Disc Number:</label>
+                    <input
+                      type="text"
+                      id="discnumber"
+                      name="discnumber"
+                      value="{{ metadata.discnumber if metadata.discnumber else '' }}"
+                    />
+                  </div>
+                  <div class="metadata-field">
+                    <label for="lyrics">Lyrics:</label>
+                    <textarea id="lyrics" name="lyrics">
+{{ metadata.lyrics if metadata.lyrics else '' }}</textarea
+                    >
+                  </div>
+                  <div class="metadata-field">
+                    <label for="comment">Comment:</label>
+                    <textarea id="comment" name="comment">
+{{ metadata.comment if metadata.comment else '' }}</textarea
+                    >
+                  </div>
+                  <div class="metadata-field">
+                    <label for="albumartist">Album Artist:</label>
+                    <input
+                      type="text"
+                      id="albumartist"
+                      name="albumartist"
+                      value="{{ metadata.albumartist if metadata.albumartist else '' }}"
+                    />
+                  </div>
+                  <div class="metadata-field">
+                    <label for="composer">Composer:</label>
+                    <input
+                      type="text"
+                      id="composer"
+                      name="composer"
+                      value="{{ metadata.composer if metadata.composer else '' }}"
+                    />
+                  </div>
+                  <div class="metadata-field">
+                    <label for="year">Year:</label>
+                    <input
+                      type="text"
+                      id="year"
+                      name="date"
+                      value="{{ metadata.date if metadata.date else '' }}"
+                    />
+                  </div>
+                </div>
+
+                {% if metadata.filepath %}
+                <div class="path-info">
+                  <strong>Path:</strong> {{ metadata.filepath }}
+                </div>
+                {% endif %} {% if metadata.bitrate %}
+                <div class="path-info">
+                  <strong>Bitrate:</strong> {{ metadata.bitrate }}
+                </div>
+                {% endif %}
+                <div class="text-center mt-3">
+                  <button type="submit" class="btn btn-success">
+                    <i class="bi bi-save"></i> Save Metadata
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Cover Images Section -->
+          {% set all_covers = [] %} {% for track in results %} {% if
+          track.cover_art %} {% set _ = all_covers.append(track.cover_art) %} {%
+          endif %} {% endfor %}
+
+          <div class="card shadow mb-4">
+            <div class="card-body">
+              <h4 class="section-title">
+                <i class="bi bi-image"></i> Cover Images ({{ all_covers | length
+                }})
+              </h4>
+              {% if all_covers %}
+              <div class="d-flex flex-wrap justify-content-center">
+                {% for cover_url in all_covers %}
+                <img
+                  src="{{ cover_url }}"
+                  alt="Album Cover"
+                  class="cover-thumbnail"
+                />
+                {% endfor %}
+              </div>
+              {% else %}
+              <p>No cover images found.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Matches Found Section -->
+          <div class="card shadow mb-4">
+            <div class="card-body">
+              <h4 class="section-title">
+                <i class="bi bi-list-ul"></i> Matches Found ({{ results | length
+                }})
+              </h4>
+              {% if results %} {% for loop_index, track in enumerate(results) %}
+              {% if track is not none %}
+              <div class="match-item" data-match-index="{{ loop_index }}">
+                <strong>Title:</strong> {{ track.title if track.title else 'N/A'
+                }}<br />
+                <strong>Artist:</strong> {{ track['artist-credit'][0].name if
+                track.get('artist-credit') and
+                track['artist-credit'][0].get('name') else 'N/A' }}<br />
+                <strong>Album:</strong> {{ track.releases[0].title if
+                track.get('releases') and track['releases'][0].get('title') else
+                'N/A' }}
+              </div>
+              {% endif %} {% endfor %} {% else %}
+              <p>No matches found.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          {% else %}
+          <div class="card shadow">
+            <div class="card-body">
+              <p class="text-center">
+                Upload an MP3 file to see the information here.
+              </p>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="text-center mt-4">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary"
+              >Upload Another File</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Function to get match data by index
+        function getMatchData(index) {
+          const scriptElement = document.getElementById(
+            "match-" + index + "-data"
+          );
+          if (scriptElement) {
+            try {
+              return JSON.parse(scriptElement.textContent);
+            } catch (e) {
+              console.error(
+                "Error parsing JSON for match index ",
+                index,
+                ":",
+                e
+              );
+              return null;
+            }
+          } else {
+            console.error(
+              "Script element for match index ",
+              index,
+              " not found."
+            );
+            return null;
+          }
+        }
+
+        // Function to populate metadata fields
+        function populateMetadataFields(matchData) {
+          console.log("Populating fields with data:", matchData); // Log data being used
+          document.getElementById("title").value = matchData.title || "";
+          // Prioritize album artist from match if available, otherwise use primary artist
+          // Check both 'artist-credit' array structure and 'name' property
+          document.getElementById("artist").value =
+            (matchData["artist-credit"] &&
+              matchData["artist-credit"][0] &&
+              matchData["artist-credit"][0].name) ||
+            "";
+          // Try to get album name from releases, fallback to track title if needed
+          document.getElementById("album").value =
+            (matchData.releases &&
+              matchData.releases[0] &&
+              matchData.releases[0].title) ||
+            "";
+          // Genre is not reliably in MusicBrainz/Last.fm track/album info, so we won't populate it from here
+          // document.getElementById('genre').value = matchData.genre || '';
+          // Track and Disc numbers are not reliably in MusicBrainz/Last.fm track/album info, so we won't populate them from here
+          // document.getElementById('tracknumber').value = matchData.tracknumber || '';
+          // document.getElementById('discnumber').value = matchData.discnumber || '';
+          // Lyrics and Comment are not in MusicBrainz/Last.fm data
+          // document.getElementById('lyrics').value = matchData.lyrics || '';
+          // document.getElementById('comment').value = matchData.comment || '';
+
+          // Album Artist is not consistently available in the primary track/album search results we are using
+          // document.getElementById('albumartist').value = matchData.albumartist || '';
+          // Composer is not consistently available
+          // document.getElementById('composer').value = matchData.composer || '';
+
+          // Year from release date
+          document.getElementById("year").value =
+            (matchData.releases &&
+              matchData.releases[0] &&
+              matchData.releases[0].date &&
+              matchData.releases[0].date.substring(0, 4)) ||
+            "";
+
+          // Note: Cover art requires a separate mechanism, not just populating a field.
+          // We are not implementing saving cover art in this step.
+        }
+
+        // Make Best Match header clickable (excluding the arrow)
+        const bestMatchHeader = document.querySelector(".best-match-header");
+        const collapseToggle = bestMatchHeader
+          ? bestMatchHeader.querySelector(".collapse-toggle")
+          : null; // Get toggle element
+
+        if (bestMatchHeader) {
+          bestMatchHeader.addEventListener("click", function (event) {
+            console.log("Best Match Header clicked.", event.target);
+
+            // Check if the click was on the collapse toggle icon or inside it
+            if (
+              collapseToggle &&
+              (event.target === collapseToggle ||
+                collapseToggle.contains(event.target))
+            ) {
+              console.log(
+                "Click was on collapse toggle, letting Bootstrap handle."
+              );
+              return; // Let Bootstrap handle the collapse toggle
+            }
+
+            console.log(
+              "Click was on header (not toggle), attempting to populate."
+            );
+
+            const matchIndex = this.dataset.matchIndex;
+            const matchData = getMatchData(matchIndex);
+
+            if (matchData) {
+              populateMetadataFields(matchData);
+            } else {
+              console.error("Could not get match data for index ", matchIndex);
+            }
+          });
+
+          // Add click handler to the collapse toggle itself to prevent propagation
+          // This is important to prevent the click on the icon from triggering the header's populate logic
+          if (collapseToggle) {
+            collapseToggle.addEventListener("click", function (event) {
+              console.log("Collapse toggle clicked, stopping propagation.");
+              event.stopPropagation(); // Prevent click from bubbling up to the header
+            });
+          }
+        }
+
+        // Make Matches Found items clickable
+        const matchItems = document.querySelectorAll(".match-item");
+        matchItems.forEach((item) => {
+          if (item) {
+            // Check if item is not null/undefined
+            item.addEventListener("click", function () {
+              console.log("Match item clicked.", this);
+              const matchIndex = this.dataset.matchIndex;
+              const matchData = getMatchData(matchIndex);
+
+              if (matchData) {
+                populateMetadataFields(matchData);
+              } else {
+                console.error(
+                  "Could not get match data for index ",
+                  matchIndex
+                );
+              }
+            });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
