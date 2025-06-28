@@ -1,6 +1,10 @@
+"""
+MusicBrainz API service for searching music metadata and cover art.
+"""
+
 import requests
-from config import LASTFM_API_KEY, YOUTUBE_API_KEY
 import urllib.parse
+from music.config import LASTFM_API_KEY, YOUTUBE_API_KEY
 
 
 def get_youtube_thumbnail(artist, title, album=None):
@@ -36,8 +40,10 @@ def get_youtube_thumbnail(artist, title, album=None):
 
 
 def search_musicbrainz(title, artist):
+    """Search MusicBrainz for track information and cover art."""
     query = f"recording:{title} AND artist:{artist}"
     url = f"https://musicbrainz.org/ws/2/recording/?query={query}&fmt=json"
+
     try:
         response = requests.get(
             url, headers={"User-Agent": "SongMetadataApp/1.0 ( email@example.com )"})

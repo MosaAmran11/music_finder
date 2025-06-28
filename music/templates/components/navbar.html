@@ -1,0 +1,44 @@
+<!-- Navigation Header -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container">
+    <!-- Brand -->
+    <a
+      class="navbar-brand d-flex align-items-center"
+      href="{{ url_for('main.index') }}"
+    >
+      <i class="bi bi-music-note-beamed me-2"></i>
+      <span class="fw-bold">Song Info Finder</span>
+    </a>
+
+    <!-- Mobile Toggle -->
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNav"
+      aria-controls="navbarNav"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Navigation Items -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('main.index') }}">
+            <i class="bi bi-house me-1"></i>Home
+          </a>
+        </li>
+        {% if request.endpoint != 'main.index' %}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('main.index') }}">
+            <i class="bi bi-upload me-1"></i>Upload Another File
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,151 @@
+{% extends "base.html" %} {% block title %}Upload MP3 File - Song Info Finder{%
+endblock %} {% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card shadow fade-in">
+        <div class="card-header bg-primary text-white">
+          <h2 class="card-title text-center mb-0">
+            <i class="bi bi-upload me-2"></i>Upload MP3 File
+          </h2>
+        </div>
+        <div class="card-body p-4">
+          <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            <div class="mb-4">
+              <label for="filepath" class="form-label">
+                <i class="bi bi-file-music me-1"></i>Audio File Path
+              </label>
+              <div class="input-group">
+                <input
+                  type="text"
+                  name="filepath"
+                  id="filepath"
+                  class="form-control"
+                  placeholder="Enter the absolute path to your MP3 file..."
+                  required
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  title="Enter the full path to your MP3 file (e.g., C:\Music\song.mp3)"
+                />
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  id="browseBtn"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  title="Select a file to get the filename"
+                >
+                  <i class="bi bi-folder2-open"></i>
+                </button>
+              </div>
+              <div class="form-text">
+                <i class="bi bi-info-circle me-1"></i>
+                <strong>Note:</strong> Due to browser security restrictions, the
+                Browse button will only show the filename. You'll need to
+                manually enter the full path.
+              </div>
+            </div>
+
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-search me-2"></i>Find Song Info
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Help Section -->
+      <div class="card mt-4 shadow fade-in">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-question-circle me-2"></i>How to Use
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6><i class="bi bi-1-circle me-2"></i>Enter File Path</h6>
+              <p class="text-muted small">
+                Provide the complete path to your MP3 file on your system.
+              </p>
+            </div>
+            <div class="col-md-6">
+              <h6><i class="bi bi-2-circle me-2"></i>Get Results</h6>
+              <p class="text-muted small">
+                The app will search for song information and display matches.
+              </p>
+            </div>
+            <div class="col-md-6">
+              <h6><i class="bi bi-3-circle me-2"></i>Edit Metadata</h6>
+              <p class="text-muted small">
+                Click on any match to populate the form fields with that data.
+              </p>
+            </div>
+            <div class="col-md-6">
+              <h6><i class="bi bi-4-circle me-2"></i>Save Changes</h6>
+              <p class="text-muted small">
+                Click "Save Metadata" to write the changes back to your file.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize form submission handling
+    UI.handleFormSubmission(
+      document.getElementById("uploadForm"),
+      "Searching for song information..."
+    );
+
+    // File browser functionality
+    document.getElementById("browseBtn").addEventListener("click", function () {
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = ".mp3";
+      fileInput.style.display = "none";
+
+      fileInput.addEventListener("change", function () {
+        if (this.files.length > 0) {
+          const file = this.files[0];
+          const filename = file.name;
+
+          // Show the filename to help user identify the file
+          document.getElementById("filepath").value = filename;
+
+          // Show helpful message
+          const isWindows = navigator.platform.indexOf("Win") !== -1;
+          const examplePath = isWindows
+            ? `C:\\Music\\${filename}`
+            : `/home/user/music/${filename}`;
+
+          UI.showInfo(
+            `Selected: ${filename}\n\nPlease enter the full path manually.\n\nExample: ${examplePath}`
+          );
+        }
+      });
+
+      fileInput.click();
+    });
+
+    // Real-time path validation
+    const filepathInput = document.getElementById("filepath");
+    const debouncedValidation = UI.debounce(function () {
+      const path = filepathInput.value;
+      if (path && !UI.isValidFilePath(path)) {
+        filepathInput.classList.add("is-invalid");
+        UI.showWarning("Please enter a valid MP3 file path");
+      } else {
+        filepathInput.classList.remove("is-invalid");
+      }
+    }, 500);
+
+    filepathInput.addEventListener("input", debouncedValidation);
+  });
+</script>
+{% endblock %}
