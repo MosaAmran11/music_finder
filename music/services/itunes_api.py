@@ -7,7 +7,7 @@ log = get_logger()
 service = HttpService(base_url="https://itunes.apple.com")
 
 
-def get_music_by_artist_id(artist_id: str) -> []:
+def get_music_by_artist_id(artist_id: str) -> list:
     """
     Query itunes api to get all music by given artist.
 
@@ -42,10 +42,7 @@ def get_song_info(info: list, limit: int = 5) -> list:
         return []
 
     for r in results:
-        r.update({"artworkUrl1000": r.get("artworkUrl100").replace("100x100", "1000x1000")})
+        r.update({"artworkUrl1000": r.get(
+            "artworkUrl100").replace("100x100", "1000x1000")})
 
     return results
-
-
-if __name__ == '__main__':
-    print(get_song_info(['close your eyes', 'KSHMR'], limit=5))
