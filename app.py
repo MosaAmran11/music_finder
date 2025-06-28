@@ -1,14 +1,18 @@
+import builtins  # Import builtins to access enumerate
 import os
-from flask import Flask, render_template, request, redirect, url_for
-from werkzeug.utils import secure_filename
-from metadata_reader import extract_metadata
-from musicbrainz_search import search_musicbrainz
+
+from flask import Flask, render_template, request, jsonify, render_template_string
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3NoHeaderError
-import builtins  # Import builtins to access enumerate
+from requests.exceptions import ConnectionError
+
+from music.modules import AudioTags, ExtendedAudioTags
+from music.services.iteuns_api import get_song_info
+from music.utils.thumbnail import embed_thumbnail, download_thumbnail
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'mp3'}
+SEARCH_TERMS = ['title', 'artist', 'album']
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -25,86 +29,135 @@ def allowed_file(filename):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        if 'file' not in request.files:
-            return render_template('index.html', error='No file part in the request.')
+        filepath = request.form.get('filepath')
+        is_refresh = request.form.get('refresh') == '1'
 
-        file = request.files['file']
+        if not filepath:
+            return render_template('index.html', error='No file path provided.')
 
-        if file.filename == '':
-            return render_template('index.html', error='No selected file.')
+        if not os.path.exists(filepath):
+            return render_template('index.html', error='File not found. Please check the path.')
 
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            # To keep the file for editing, save it with a unique name or in a persistent location
-            # For this example, we'll save it temporarily and assume the user won't upload another
-            # before editing. In a real app, you'd need a more robust file management strategy.
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+        if not filepath.lower().endswith('.mp3'):
+            return render_template('index.html', error='Invalid file type. Only MP3 files are allowed.')
 
-            metadata = extract_metadata(filepath)
+        try:
+            if is_refresh:
+                # Use posted values for metadata
+                metadata = AudioTags(filepath)
+                # Overwrite with posted values
+                for field in ['title', 'artist', 'album', 'genre', 'tracknumber', 'discnumber', 'albumartist', 'date']:
+                    val = request.form.get(field)
+                    if val is not None:
+                        setattr(metadata, field, val)
+            else:
+                metadata = AudioTags(filepath)
+            # Use the current metadata fields for searching
+            search_terms = [metadata.get(t)
+                            for t in SEARCH_TERMS if metadata.get(t)]
+            song_info = get_song_info(search_terms)
             results = []
-            if metadata.get("title") and metadata.get("artist"):
-                results = search_musicbrainz(
-                    metadata["title"], metadata["artist"])
-
-            # Do NOT remove the file here if we want to edit it later
-            # os.remove(filepath)
-
-            # Pass enumerate function to the template context
+            for data in song_info:
+                extend_audio = ExtendedAudioTags()
+                extend_audio.itunes_parse(data)
+                results.append(extend_audio.to_dict())
+            print(metadata)
+            print(results)
             return render_template('results.html', metadata=metadata, results=results, enumerate=builtins.enumerate)
-
-        else:
-            return render_template('index.html', error='Invalid file type. Only MP3 is allowed.')
-
+        except ConnectionError:
+            return render_template('index.html', error=f'No internet connection.')
+        except Exception as e:
+            return render_template('index.html', error=f'Error processing file: {str(e)}')
     return render_template('index.html')
 
 
 @app.route('/save_metadata', methods=['POST'])
 def save_metadata():
     filepath = request.form.get('filepath')
+    thumbnail_url = request.form.get('thumbnailUrl')
     if not filepath or not os.path.exists(filepath):
-        # Handle missing file or invalid path
-        # In a real app, you'd want more secure path handling
-        return "Error: File not found.", 404  # Or render an error template
+        return ("Error: File not found.", 404) if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' else render_template('results.html', metadata=None, results=[], error='File not found.')
 
     try:
-        # Open the MP3 file and get ID3 tags
-        # Use EasyID3 for simple tag manipulation
         audio = EasyID3(filepath)
     except ID3NoHeaderError:
-        # If no ID3 header exists, create one
         audio = EasyID3()
-        audio.save(filepath)  # Save the empty header
-        audio = EasyID3(filepath)  # Re-open with the new header
+        audio.save(filepath, v2_version=3)
+        audio = EasyID3(filepath)
     except Exception as e:
         print(f"Error opening file for editing: {e}")
-        return "Error: Could not open file for editing.", 500
+        return ("Error: Could not open file for editing.", 500) if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' else render_template('results.html', metadata=None, results=[], error='Could not open file for editing.')
 
-    # Get data from the form and update tags
     audio['title'] = request.form.get('title', '')
     audio['artist'] = request.form.get('artist', '')
     audio['album'] = request.form.get('album', '')
     audio['genre'] = request.form.get('genre', '')
     audio['tracknumber'] = request.form.get('tracknumber', '')
     audio['discnumber'] = request.form.get('discnumber', '')
-    audio['lyrics'] = request.form.get('lyrics', '')
-    audio['comment'] = request.form.get('comment', '')
     audio['albumartist'] = request.form.get('albumartist', '')
-    audio['composer'] = request.form.get('composer', '')
-    audio['date'] = request.form.get('date', '')  # Save as 'date' tag
-
-    # Bitrate and filepath are not standard editable ID3 tags
+    audio['date'] = request.form.get('date', '')
 
     try:
-        audio.save()
+        audio.save(v2_version=3)
         print(f"Metadata saved for {filepath}")
-        # Redirect back to the results page or a success page
-        # For simplicity, redirect back to index for now.
-        # In a real app, you might re-render the results page with saved data.
-        return redirect(url_for('index'))
+        # Always embed cover art if thumbnailUrl is provided
+        if thumbnail_url:
+            try:
+                thumb_path = download_thumbnail(thumbnail_url)
+                embed_thumbnail(filepath, thumb_path)
+                print(f"Thumbnail embedded for {filepath}")
+            except Exception as e:
+                print(f"Warning: Could not embed thumbnail: {e}")
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': True, 'message': 'Metadata saved successfully.'})
+        return render_template('results.html', metadata=AudioTags(filepath), results=[], success='Metadata saved successfully.')
     except Exception as e:
         print(f"Error saving metadata: {e}")
-        return "Error: Could not save metadata.", 500
+        return ("Error: Could not save metadata.", 500) if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' else render_template('results.html', metadata=None, results=[], error='Could not save metadata.')
+
+
+@app.route('/refresh_metadata', methods=['POST'])
+def refresh_metadata():
+    filepath = request.form.get('filepath')
+    # Use the current form values for the search
+    title = request.form.get('title', '')
+    artist = request.form.get('artist', '')
+    album = request.form.get('album', '')
+    genre = request.form.get('genre', '')
+    tracknumber = request.form.get('tracknumber', '')
+    discnumber = request.form.get('discnumber', '')
+    date = request.form.get('date', '')
+    albumartist = request.form.get('albumartist', '')
+    try:
+        # Use the updated metadata fields for searching
+        search_terms = [title, artist, album]
+        song_info = get_song_info([t for t in search_terms if t])
+        results = []
+        for data in song_info:
+            extend_audio = ExtendedAudioTags()
+            extend_audio.itunes_parse(data)
+            results.append(extend_audio.to_dict())
+        # Create a temporary metadata object with the current form values
+        metadata = AudioTags(filepath)
+        for field, val in [('title', title), ('artist', artist), ('album', album), ('genre', genre), ('tracknumber', tracknumber), ('discnumber', discnumber), ('albumartist', albumartist), ('date', date)]:
+            if val is not None:
+                setattr(metadata, field, val)
+        # Render only the #results-section as HTML
+        results_html = render_template_string(
+            '{% include "results.html" %}',
+            metadata=metadata,
+            results=results,
+            enumerate=enumerate
+        )
+        # Extract only the #results-section div
+        import re
+        match = re.search(
+            r'<div id="results-section">([\s\S]*?)</div>', results_html)
+        section_html = '<div id="results-section">' + \
+            match.group(1) + '</div>' if match else ''
+        return jsonify({'success': True, 'html': section_html})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
 
 if __name__ == '__main__':

@@ -1,2 +1,8 @@
-'' 
-config.py 
+''
+metadata_reader.py
+musicbrainz_search.py
+config.py
+tests/
+music/utils/__pycache__/
+music/services/__pycache__/
+music/__pycache__/
