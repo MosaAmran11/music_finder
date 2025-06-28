@@ -1,199 +1,227 @@
-# Song Info Finder
+# Song Info Finder - User Guide
 
-A Flask web application for finding and editing MP3 metadata using MusicBrainz, Last.fm, and YouTube Music APIs.
+🎵 **Find and edit song information for your MP3 files automatically!**
 
-## Features
+Song Info Finder is a simple web application that helps you find missing song information (like artist, album, title, etc.) for your MP3 files and save it directly to the files. It searches the iTunes database to find the most accurate information for your music.
 
-- 🎵 **MP3 Metadata Extraction**: Read existing metadata from MP3 files
-- 🔍 **Multi-Source Search**: Search for song information using iTunes API
-- 🖼️ **Cover Art Retrieval**: Get album covers from Last.fm and YouTube Music
-- ✏️ **Metadata Editing**: Edit and save metadata back to MP3 files
-- 🖼️ **Cover Art Embedding**: Embed cover art directly into MP3 files
-- 🔄 **Real-time Refresh**: Update search results with edited metadata
-- 📱 **Responsive UI**: Modern Bootstrap-based interface
+## ✨ What Can Song Info Finder Do?
 
-## Project Structure
+- **🔍 Find Missing Information**: Automatically search for song details like artist, album, title, genre, and year
+- **🖼️ Get Album Covers**: Download and embed album artwork into your MP3 files
+- **✏️ Edit Information**: Manually edit any song details before saving
+- **💾 Save to Files**: Write all the information directly to your MP3 files
+- **🔄 Refresh Results**: Search again with updated information to find better matches
 
-```
-music_finder/
-├── main.py                 # Application entry point
-├── app.py                  # Legacy entry point (deprecated)
-├── requirements.txt        # Python dependencies
-├── README.md              # This file
-├── .gitignore             # Git ignore rules
-├── music/                 # Main application package
-│   ├── __init__.py        # Flask app factory
-│   ├── config.py          # Configuration settings
-│   ├── routes.py          # Flask route handlers
-│   ├── modules.py         # Audio metadata classes
-│   ├── services/          # External API services
-│   │   ├── __init__.py
-│   │   ├── http_service.py
-│   │   ├── iteuns_api.py
-│   │   └── musicbrainz_service.py
-│   └── utils/             # Utility functions
-│       ├── __init__.py
-│       ├── datetime.py
-│       ├── files.py
-│       ├── logger.py
-│       └── thumbnail.py
-├── templates/             # HTML templates
-│   ├── index.html
-│   └── results.html
-├── static/                # Static assets
-│   └── style.css
-├── tests/                 # Unit tests
-└── uploads/               # Upload directory
-```
+## 🚀 Quick Start Guide
 
-## Installation
+### Step 1: Download and Install
 
-1. **Clone the repository**:
+1. **Download the application** from the project page
+2. **Extract the files** to a folder on your computer
+3. **Open Command Prompt/Terminal** in that folder
 
-   ```bash
-   git clone https://github.com/MosaAmran11/music-finder.git
-   cd music_finder
-   ```
+### Step 2: Set Up the Application
 
-2. **Create a virtual environment**:
-   1. On Windows:
-
-   ```cmd
-   py -m venv .venv
-   .\.venv\Scripts\activate.bat
-   ```
-
-   2. On Linux:
+1. **Create a virtual environment** (this keeps the app separate from other programs):
 
    ```bash
    python -m venv .venv
-   source .venv/bin/activate
    ```
 
-3. **Install dependencies**:
+2. **Activate the virtual environment**:
+
+   - **Windows**: `.venv\Scripts\activate`
+   - **Mac/Linux**: `source .venv/bin/activate`
+
+3. **Install required packages**:
 
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure API keys** (optional):
-   Edit `music/config.py` to add your own API keys:
+### Step 3: Run the Application
 
-   ```python
-   LASTFM_API_KEY = "your_lastfm_api_key"
-   YOUTUBE_API_KEY = "your_youtube_api_key"
+1. **Start the application**:
+
+   ```bash
+   python main.py
    ```
 
-## Usage
+2. **Open your web browser** and go to: `http://127.0.0.1:5000`
 
-### Running the Application
+3. **You should see the Song Info Finder homepage!** 🎉
 
-**Recommended way** (using the new structure):
+## 📖 How to Use Song Info Finder
 
-```bash
-python main.py
-```
+### Finding Song Information
 
-**Legacy way** (deprecated):
+1. **Enter the file path** of your MP3 file
 
-```bash
-python app.py
-```
+   - Example: `C:\Music\My Song.mp3` (Windows)
+   - Example: `/home/user/music/my-song.mp3` (Mac/Linux)
 
-The application will be available at `http://127.0.0.1:5000`
+   💡 **Tip**: Use the "Browse" button to select a file and get the filename, then add the full path manually.
 
-### How to Use
+2. **Click "Find Song Info"** to search for information
 
-1. **Upload a File**: Enter the path to an MP3 file on your system
-2. **View Results**: The app will search for song information and display matches
-3. **Edit Metadata**: Click on any match to populate the form fields
-4. **Save Changes**: Click "Save Metadata" to write changes back to the file
-5. **Refresh Search**: Use the "Refresh" button to search with updated metadata
+3. **Wait for results** - the app will search iTunes for matching songs
 
-## Configuration
+### Understanding the Results
 
-### Environment Variables
+The app will show you:
 
-- `SECRET_KEY`: Flask secret key (default: 'a_very_secret_key')
-- `FLASK_DEBUG`: Enable debug mode (default: True)
-- `FLASK_HOST`: Host to bind to (default: 127.0.0.1)
-- `FLASK_PORT`: Port to bind to (default: 5000)
+- **🎯 Best Match**: The most likely match for your song (highlighted in blue)
+- **📋 Other Matches**: Additional possible matches
+- **📝 Metadata Form**: Where you can edit the song information
 
-### API Configuration
+Each match shows:
 
-The application uses the following APIs:
+- Album cover (if available)
+- Song title
+- Artist name
+- Album name
+- Year
 
-- **iTunes API**: For song information (no API key required)
-- **Last.fm API**: For cover art (API key in config)
-- **YouTube Music API**: For cover art fallback (API key in config)
+### Editing Song Information
 
-## Development
+1. **Click on any match** to automatically fill the form with that information
+2. **Edit the fields** as needed:
 
-### Project Architecture
+   - **Title**: The name of the song
+   - **Artist**: The performer or band
+   - **Album**: The album the song is from
+   - **Genre**: The music genre (e.g., Rock, Pop, Jazz)
+   - **Track Number**: The song's position on the album
+   - **Disc Number**: If it's a multi-disc album
+   - **Album Artist**: The main artist for the album
+   - **Year**: The year the song/album was released
 
-The application follows a modular Flask structure:
+3. **Use the buttons**:
+   - **"Use These Tags"**: Fill the form with the selected match
+   - **"Reset to File Tags"**: Go back to the original information in your file
+   - **"Refresh"**: Search again with your edited information
+   - **"Save Metadata"**: Save all changes to your MP3 file
 
-- **Application Factory**: `music/__init__.py` creates the Flask app
-- **Blueprint Routes**: `music/routes.py` contains all route handlers
-- **Services**: External API integrations in `music/services/`
-- **Models**: Audio metadata classes in `music/modules.py`
-- **Utilities**: Helper functions in `music/utils/`
+### Saving Your Changes
 
-### Adding New Features
+1. **Review the information** in the form
+2. **Click "Save Metadata"**
+3. **Wait for confirmation** - you'll see a success message
+4. **Your MP3 file is now updated!** 🎉
 
-1. **New Routes**: Add to `music/routes.py`
-2. **New Services**: Create in `music/services/`
-3. **New Utilities**: Add to `music/utils/`
-4. **Configuration**: Update `music/config.py`
+## 💡 Tips and Tricks
 
-### Testing
+### Getting Better Results
 
-Run the test suite:
+The search relies on the **Title**, **Album**, and **Artist** fields. So, on Metadata Fields, try to:
 
-```bash
-python -m pytest tests/
-```
+- **Use the full song title** if possible
+- **Try the "Refresh" button** with different information if results aren't good
+- **Check "Other Matches"** if the best match doesn't look right
 
-## API Endpoints
+### File Path Tips
 
-- `GET /`: Main page for file upload
-- `POST /`: Process uploaded file and search for metadata
-- `POST /save_metadata`: Save metadata to MP3 file
-- `POST /refresh_metadata`: Refresh search results (AJAX)
+- **Windows**: Use backslashes `\`
+- **Mac/Linux**: Use forward slashes `/`
+- **Avoid spaces**: If your path has spaces, that's fine - the app handles them
+- **Check permissions**: Make sure you can read and write to the file
 
-## Dependencies
+### Troubleshooting
 
-- **Flask**: Web framework
-- **mutagen**: MP3 metadata handling
-- **requests**: HTTP client for API calls
-- **Pillow**: Image processing for thumbnails
+**"File not found" error:**
 
-## License
+- Double-check the file path
+- Make sure the file exists
+- Try copying the path from your file explorer
 
-This project is open source and available under the MIT License.
+**"No search results" error:**
 
-## Contributing
+- Check your internet connection
+- Try a different song title or artist name
+- Use the "Refresh" button with different information
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+**"Could not save metadata" error:**
 
-## Troubleshooting
+- Make sure the file isn't open in another program
+- Check that you have write permissions for the file
+- Try running the app as administrator (Windows)
 
-### Common Issues
+**Cover art not showing:**
 
-1. **File not found**: Ensure the MP3 file path is correct and accessible
-2. **No search results**: Check your internet connection and API keys
-3. **Permission errors**: Ensure the app has write permissions for the MP3 file
-4. **Cover art not embedding**: Check if the thumbnail URL is accessible
+- Not all songs have cover art available
+- The app will show "No Cover" if none is found
+- Cover art is automatically embedded when you save
 
-### Debug Mode
+## 🔧 Advanced Features
 
-Enable debug mode for detailed error messages:
+### Refreshing Search Results
 
-```bash
-export FLASK_DEBUG=True
-python main.py
-```
+If you don't get good results:
+
+1. **Edit the information** in the form
+2. **Click "Refresh"** to search again
+3. **Try different combinations** of title, artist, and album
+
+### Manual Editing
+
+You can manually edit any field:
+
+1. **Type directly** in any field
+2. **Mix and match** information from different results
+3. **Add missing information** that wasn't found automatically
+
+## 🆘 Getting Help
+
+### Common Questions
+
+**Q: Does this work with other audio formats?**
+A: Currently, the app only works with MP3 files.
+
+**Q: Do I need an internet connection?**
+A: Yes, the app needs internet to search for song information.
+
+**Q: Is my music safe?**
+A: Yes! The app only reads and writes metadata, it doesn't change your actual music files.
+
+**Q: Can I undo changes?**
+A: You can use "Reset to File Tags" to go back to the original information, but once saved, changes are permanent.
+
+**Q: Does this work on mobile?**
+A: The web interface works on mobile browsers, but you'll need to enter file paths manually.
+
+### Support
+
+If you're having trouble:
+
+1. **Check the [troubleshooting](#troubleshooting) section** above
+2. **Make sure you followed the [installation](#-quick-start-guide) steps** correctly
+3. **Try restarting the application**
+4. **Check that your MP3 file isn't corrupted**
+
+## 📝 System Requirements
+
+- **Operating System**: Windows, Mac, or Linux
+- **Python**: Version 3.7 or higher
+- **Internet Connection**: Required for searching song information
+- **File Permissions**: Read and write access to your MP3 files
+
+## 🎯 What Song Info Finder Does NOT Do
+
+- ❌ Convert audio formats
+- ❌ Download music files
+- ❌ Play music
+- ❌ Organize your music library
+- ❌ Change the actual audio content
+
+## 🎉 Ready to Get Started?
+
+1. **Follow the Quick Start Guide** above
+2. **Try with a simple MP3 file** first
+3. **Explore the features** and see how it works
+4. **Enjoy your properly tagged music!** 🎵
+
+---
+
+**Happy music organizing!** 🎶
+
+_Song Info Finder uses the iTunes API to find song information. No API keys or accounts required._
