@@ -5,13 +5,14 @@ Flask routes for the Song Info Finder application.
 import builtins
 import re
 import os
-from flask import Blueprint, render_template, request, jsonify, render_template_string, current_app
+from flask import Blueprint, render_template, request, jsonify, render_template_string, current_app, session, redirect, url_for
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3NoHeaderError
 from requests.exceptions import ConnectionError
 
 from music.modules import AudioTags, ExtendedAudioTags
 from music.services.itunes_api import get_song_info
+from music.config import RESULTS_LIMIT_DEFAULT
 from music.utils.thumbnail import embed_thumbnail, download_thumbnail
 
 main_bp = Blueprint('main', __name__)
@@ -53,7 +54,9 @@ def index():
             # Use the current metadata fields for searching
             search_terms = [metadata.get(
                 t) for t in current_app.config['SEARCH_TERMS'] if metadata.get(t)]
-            song_info = get_song_info(search_terms)
+            # Determine results limit from session or default
+            results_limit = session.get('results_limit', RESULTS_LIMIT_DEFAULT)
+            song_info = get_song_info(search_terms, limit=results_limit)
             results = []
             for data in song_info:
                 extend_audio = ExtendedAudioTags()
@@ -67,6 +70,26 @@ def index():
             return render_template('index.html', error=f'Error processing file: {str(e)}')
 
     return render_template('index.html')
+
+
+@main_bp.route('/settings', methods=['GET', 'POST'])
+def settings():
+    """Settings page to configure UI preferences."""
+    if request.method == 'POST':
+        try:
+            results_limit = int(request.form.get(
+                'results_limit', RESULTS_LIMIT_DEFAULT))
+            if results_limit < 1:
+                results_limit = RESULTS_LIMIT_DEFAULT
+        except (TypeError, ValueError):
+            results_limit = RESULTS_LIMIT_DEFAULT
+
+        session['results_limit'] = results_limit
+        # After saving, redirect back to index or referer
+        return redirect(url_for('main.index'))
+
+    current_limit = session.get('results_limit', RESULTS_LIMIT_DEFAULT)
+    return render_template('settings.html', current_limit=current_limit)
 
 
 @main_bp.route('/save_metadata', methods=['POST'])

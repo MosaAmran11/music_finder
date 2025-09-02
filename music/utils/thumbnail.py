@@ -33,29 +33,25 @@ def embed_thumbnail(audio_filename: str, thumbnail_path: str):
     except Exception:
         jpeg_thumb_path = thumbnail_path  # fallback
 
-    # Embed the thumbnail image into the audio file
-    try:
-        audio = MP3(audio_filename, ID3=ID3)
-        audio.tags.add(APIC(
-            encoding=3,  # 3 = utf-8
-            mime='image/jpeg',  # MIME type of the image
-            type=3,  # 3 = cover image
-            desc='Cover',
-            data=open(jpeg_thumb_path, 'rb').read()
-        ))
-        audio.save(v2_version=3)
-    except error:
-        # If the file has no existing ID3 tags, add them
-        audio = MP3(audio_filename)
+    # Embed the thumbnail image into the audio file (replace old cover art if present)
+    audio = MP3(audio_filename, ID3=ID3)
+    if audio.tags is None:
         audio.add_tags()
-        audio.tags.add(APIC(
-            encoding=3,
-            mime='image/jpeg',
-            type=3,
-            desc='Cover',
-            data=open(jpeg_thumb_path, 'rb').read()
-        ))
-        audio.save(v2_version=3)
+    else:
+        # Remove any existing embedded images
+        audio.tags.delall('APIC')
 
-    # Clean up the downloaded thumbnail image
-    os.remove(thumbnail_path)
+    audio.tags.add(APIC(
+        encoding=3,  # 3 = utf-8
+        mime='image/jpeg',  # MIME type of the image
+        type=3,  # 3 = cover image
+        desc='Cover',
+        data=open(jpeg_thumb_path, 'rb').read()
+    ))
+    audio.save(v2_version=3)
+
+    # Clean up the downloaded/converted thumbnail image(s)
+    if jpeg_thumb_path != thumbnail_path and os.path.exists(jpeg_thumb_path):
+        os.remove(jpeg_thumb_path)
+    if os.path.exists(thumbnail_path):
+        os.remove(thumbnail_path)

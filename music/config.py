@@ -9,6 +9,9 @@ UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'mp3'}
 SEARCH_TERMS = ['title', 'artist', 'album']
 
+# App Defaults
+RESULTS_LIMIT_DEFAULT = int(os.environ.get('RESULTS_LIMIT_DEFAULT', 5))
+
 # Flask Configuration
 SECRET_KEY = os.environ.get('SECRET_KEY', 'a_very_secret_key')
 
